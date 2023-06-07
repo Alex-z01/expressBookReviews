@@ -27,40 +27,74 @@ public_users.post("/register", (req,res) => {
 // Get the book list available in the shop
 public_users.get('/',function (req, res) {
   //Write your code here
-  return res.status(300).json({message: books});
+  const sendResponse = (data) => {
+    return new Promise((resolve) => {
+      res.status(200).json(data);
+      resolve();
+    });
+  };
+
+  sendResponse({ books })
+    .then(() => {
+      // Handle any additional logic after sending the response
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred while processing the request.' });
+    });
 });
 
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn',function (req, res) {
-    //Write your code here
     const isbn = req.params.isbn;
 
+  // Wrap the book lookup logic in a promise
+  const findBookByISBN = new Promise((resolve, reject) => {
     // Access the book with the specified ISBN from your 'books' object
     const book = books[isbn];
 
     // Check if the book exists
     if (book) {
-        res.json(book); // Send the book as JSON response
+      resolve(book);
     } else {
-        res.status(404).json({ error: 'Book not found' });
+      reject(new Error('Book not found'));
     }
+  });
+
+  findBookByISBN
+    .then((book) => {
+      res.json(book); // Send the book as JSON response
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(404).json({ error: 'Book not found' });
+    });
 });
   
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
-    //Write your code here
     const author = req.params.author;
 
-    console.log(author);
+    // Wrap the book filtering logic in a promise
+    const findBooksByAuthor = new Promise((resolve, reject) => {
+    const filteredBooks = Object.values(books).filter(book => book.author === author);
 
-    const book = Object.values(books).filter(book => book.author === author);
-
-    // Check if the book exists
-    if (book) {
-        res.json(book); // Send the book as JSON response
+    // Check if any books are found
+    if (filteredBooks.length > 0) {
+        resolve(filteredBooks);
     } else {
-        res.status(404).json({ error: 'Book not found' });
+        reject(new Error('No books found for the author'));
     }
+    });
+
+    findBooksByAuthor
+    .then((filteredBooks) => {
+        res.json(filteredBooks); // Send the filtered books as JSON response
+    })
+    .catch((error) => {
+        console.error(error);
+        res.status(404).json({ error: 'No books found for the author' });
+    });
 });
 
 // Get all books based on title
@@ -82,19 +116,28 @@ public_users.get('/title/:title',function (req, res) {
 
 //  Get book review
 public_users.get('/review/:isbn',function (req, res) {
-    //Write your code here
     const isbn = req.params.isbn;
 
-    // Access the book with the specified ISBN from your 'books' object
-    const book = books[isbn];
-    const reviews = book.reviews;
-
-    // Check if the book exists
-    if (book) {
-        res.json(reviews); // Send the book as JSON response
-    } else {
-        res.status(404).json({ error: 'Book not found' });
-    }
+    // Wrap the book filtering logic in a promise
+    const findBooksByISBN = new Promise((resolve, reject) => {
+      const filteredBooks = Object.keys(books).filter(key => key === isbn);
+  
+      // Check if any books are found
+      if (filteredBooks.length > 0) {
+        resolve(filteredBooks);
+      } else {
+        reject(new Error('No books found with the given ISBN'));
+      }
+    });
+  
+    findBooksByISBN
+      .then((filteredBooks) => {
+        res.json(books[filteredBooks]); // Send the filtered books as JSON response
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(404).json({ error: 'No books found with the given ISBN' });
+      });
 });
 
 module.exports.general = public_users;
